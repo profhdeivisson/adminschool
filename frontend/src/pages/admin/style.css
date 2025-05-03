@@ -1,0 +1,41 @@
+/* Custom styles for admin page */
+.MuiListItem-root.Mui-selected {
+  background-color: rgba(74, 144, 226, 0.1);
+  border-left: 3px solid #4a90e2;
+}
+
+.MuiListItem-root.Mui-selected .MuiListItemText-primary {
+  font-weight: bold;
+  color: #4a90e2;
+}
+
+.MuiTableCell-head {
+  background-color: #f9f9f9;
+}
+
+/* Add pointer cursor to filter buttons */
+.filter-button {
+  cursor: pointer;
+}
+
+/* Style for clear filter button */
+.clear-filter-button {
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.clear-filter-button .MuiListItemText-primary {
+  color: #f44336;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.clear-filter-button:hover {
+  background-color: rgba(244, 67, 54, 0.08);
+}
+
+/* Add hover effect to table rows */
+.table-row-hover:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
