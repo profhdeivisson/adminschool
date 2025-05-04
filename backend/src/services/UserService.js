@@ -92,7 +92,7 @@ class UserService {
       throw new Error('Email já cadastrado');
     }
   
-    // Cria o usuário (agora com role normalizada)
+    // Cria o usuário 
     const user = new User({
       name: name.trim(),
       email: email.toLowerCase().trim(),

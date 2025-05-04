@@ -11,7 +11,7 @@ router.post('/register', userController.register.bind(userController));
 router.post('/login', userController.login.bind(userController));
 
 // Rotas protegidas
-router.get('/users', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR]), userController.getAllUsers.bind(userController));
-router.get('/users/:id', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR, UserRoles.ALUNO]), userController.getUserById.bind(userController));
+router.get('/', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR]), userController.getAllUsers.bind(userController));
+router.get('/:id', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR, UserRoles.ALUNO]), userController.getUserById.bind(userController));
 
 module.exports = router;
