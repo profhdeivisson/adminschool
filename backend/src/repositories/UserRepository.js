@@ -42,10 +42,42 @@ class UserRepository {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email.toLowerCase().trim()) // Busca com email normalizado
+      .eq('email', email.toLowerCase().trim())
       .single();
 
-    if (error && error.code !== 'PGRST116') { // Ignora erro "Nenhum resultado"
+    if (error && error.code !== 'PGRST116') {
+      console.error('Erro no Supabase:', error);
+      throw new Error(`Falha ao buscar usuário: ${error.message}`);
+    }
+
+    return data || null;
+  }
+
+  async findAll() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*');
+
+    if (error) {
+      console.error('Erro no Supabase:', error);
+      throw new Error(`Falha ao buscar usuários: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  async findById(id) {
+    if (!id) {
+      throw new Error('ID inválido');
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
       console.error('Erro no Supabase:', error);
       throw new Error(`Falha ao buscar usuário: ${error.message}`);
     }

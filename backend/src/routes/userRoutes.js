@@ -1,8 +1,17 @@
 const express = require('express');
 const UserController = require('../controllers/UserController');
+const authMiddleware = require('../middleware/authMiddleware');
+const { UserRoles } = require('../constants/enums');
 
 const router = express.Router();
+const userController = new UserController();
 
-router.post('/register', UserController.register);
+// Rotas públicas
+router.post('/register', userController.register.bind(userController));
+router.post('/login', userController.login.bind(userController));
+
+// Rotas protegidas
+router.get('/users', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR]), userController.getAllUsers.bind(userController));
+router.get('/users/:id', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR, UserRoles.ALUNO]), userController.getUserById.bind(userController));
 
 module.exports = router;
