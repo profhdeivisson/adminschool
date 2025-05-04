@@ -10,8 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "build": "npm install --production && npm run clean && npm run compile",
-    "clean": "rm -rf dist"
+    "build": "npm install --production"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
