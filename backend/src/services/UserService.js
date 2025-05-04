@@ -1,7 +1,9 @@
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { UserRoles } = require('../constants/enums');
 const UserRepository = require('../repositories/UserRepository');
+require('dotenv').config();
 
 class UserService {
   constructor() {
@@ -16,6 +18,61 @@ class UserService {
     // Implementação da lógica de promoção
     const updatedUser = await this.repository.updateUserRole(userId, newRole);
     return updatedUser;
+  }
+
+  async login(email, password) {
+    const user = await this.repository.findByEmail(email);
+    if (!user) {
+      throw new Error('Email ou senha inválidos');
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      throw new Error('Email ou senha inválidos');
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return { token, user };
+  }
+
+  async getAllUsers(requestingUserRole) {
+    const users = await this.repository.findAll();
+    
+    switch (requestingUserRole) {
+      case UserRoles.ADMIN:
+        return users;
+      case UserRoles.PROFESSOR:
+        return users.filter(user => user.role === UserRoles.ALUNO);
+      default:
+        throw new Error('Acesso não autorizado');
+    }
+  }
+
+  async getUserById(userId, requestingUser) {
+    const user = await this.repository.findById(userId);
+    
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    if (requestingUser.role === UserRoles.ADMIN) {
+      return user;
+    }
+
+    if (requestingUser.role === UserRoles.PROFESSOR && user.role === UserRoles.ALUNO) {
+      return user;
+    }
+
+    if (requestingUser.id === userId) {
+      return user;
+    }
+
+    throw new Error('Acesso não autorizado');
   }
 
   async register({ name, email, password, role}) {
