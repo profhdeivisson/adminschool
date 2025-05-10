@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
 const User = require('../models/User');
 const { UserRoles } = require('../constants/enums');
 const UserRepository = require('../repositories/UserRepository');
@@ -78,6 +79,16 @@ class UserService {
   async register({ name, email, password, role}) {
     if (!name || !email || !password || typeof role === 'undefined') {
       throw new Error('Nome, email, senha e role são obrigatórios');
+    }
+
+    if (!validator.isEmail(email)) {
+      throw new Error('Email inválido');
+    }
+
+    // Verifica se o domínio do email existe
+    const [, domain] = email.split('@');
+    if (!await validator.isFQDN(domain)) {
+      throw new Error('Domínio do email inválido ou inexistente');
     }
   
     // Normaliza a role (remove espaços, converte para maiúsculas)
