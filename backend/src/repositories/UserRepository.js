@@ -84,6 +84,30 @@ class UserRepository {
 
     return data || null;
   }
+
+  async delete(id) {
+    if (!id) {
+      throw new Error('ID inválido');
+    }
+
+    // Busca os dados do usuário antes de excluir
+    const user = await this.findById(id);
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro no Supabase:', error);
+      throw new Error(`Falha ao excluir usuário: ${error.message}`);
+    }
+
+    return user;
+  }
 }
 
 module.exports = UserRepository;

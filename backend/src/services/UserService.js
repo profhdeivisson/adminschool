@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const validator = require('validator');
 const User = require('../models/User');
 const { UserRoles } = require('../constants/enums');
 const UserRepository = require('../repositories/UserRepository');
@@ -79,12 +80,27 @@ class UserService {
     if (!name || !email || !password || typeof role === 'undefined') {
       throw new Error('Nome, email, senha e role são obrigatórios');
     }
+
+    if (!validator.isEmail(email)) {
+      throw new Error('Email inválido');
+    }
+
+    // Verifica se o domínio do email existe
+    const [, domain] = email.split('@');
+    if (!await validator.isFQDN(domain)) {
+      throw new Error('Domínio do email inválido ou inexistente');
+    }
   
     // Normaliza a role (remove espaços, converte para maiúsculas)
     const normalizedRole = role.trim().toUpperCase();
     
     if (!UserRoles.isValid(normalizedRole)) {
       throw new Error(`Role inválida: ${role}. Use: ${UserRoles.values().join(', ')}`);
+    }
+
+    // Verifica se a senha tem mais de 8 caracteres
+    if (password.length <= 8) {
+      throw new Error('A senha deve ter mais de 8 caracteres');
     }
   
     // Verifica email duplicado
@@ -106,6 +122,28 @@ class UserService {
     // Salva no banco de dados
     return await this.repository.create(user);
   }
+
+  async deleteUser(userId, requestingUser) {
+    if (requestingUser.role !== UserRoles.ADMIN) {
+      throw new Error('Apenas administradores podem excluir usuários');
+    }
+
+    const userToDelete = await this.repository.findById(userId);
+    if(!userToDelete) {
+      throw new Error('Usuário não encontrado');
+    }
+    if (userToDelete.role === UserRoles.ADMIN) {
+      throw new Error('Não é possível excluir um administrador');
+    }
+    if (userToDelete.id === requestingUser.id) {
+      throw new Error('Não é possível excluir o próprio usuário');
+    }
+    const deletedUser = await this.repository.delete(userId);
+    return {
+      message: `Usuário ${deletedUser.name} foi excluído com sucesso`
+    };
+  }
+
 }
 
 module.exports = UserService;
