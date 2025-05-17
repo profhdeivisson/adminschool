@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -20,23 +20,61 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import './style.css';
+import { useLoader } from '../../context/LoaderContext';
+import { useQuery } from '@tanstack/react-query';
+import { listUsers } from '../../services/listUsers';
 
 export default function Admin() {
+  const {showLoader, hideLoader, loading} = useLoader();
   const [selectedView, setSelectedView] = useState('all');
-  
-  // Mock data for the table
-  const users = [
-    { id: 1, nome: 'João Silva', email: 'joao@example.com', tipo: 'Professor' },
-    { id: 2, nome: 'Maria Santos', email: 'maria@example.com', tipo: 'Aluno' },
-    { id: 3, nome: 'Pedro Oliveira', email: 'pedro@example.com', tipo: 'Admin' },
-    { id: 4, nome: 'Ana Costa', email: 'ana@example.com', tipo: 'Professor' },
-    { id: 5, nome: 'Carlos Souza', email: 'carlos@example.com', tipo: 'Aluno' },
-    { id: 6, nome: 'Lucia Ferreira', email: 'lucia@example.com', tipo: 'Aluno' },
-    { id: 7, nome: 'Roberto Almeida', email: 'roberto@example.com', tipo: 'Professor' },
-    { id: 8, nome: 'Fernanda Lima', email: 'fernanda@example.com', tipo: 'Aluno' },
-  ];
-  
-  // Filter users based on selected view
+
+  const translateRole = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'Admin';
+      case 'PROFESSOR':
+        return 'Professor';
+      case 'ALUNO':
+        return 'Aluno';
+      default:
+        return role;
+    }
+  };
+
+  const { data: users = [], isLoading, isError, error } = useQuery({
+    queryKey: ['users'],
+    queryFn: listUsers,
+    select: (data) => {
+      if (data.error) throw new Error(data.error);
+      return data.data.map(user => ({
+        id: user.id,
+        nome: user.name,
+        email: user.email,
+        tipo: translateRole(user.role)
+      }));
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos para considerar os dados frescos
+  });
+
+  useEffect(() => {
+    showLoader();
+    const timer = setTimeout(() => {
+      hideLoader();
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+      hideLoader();
+    };
+  }, []);
+
+  if (loading || isLoading) {
+    return null;
+  }
+
+  if (isError) {
+    return <div>Erro: {error.message}</div>;
+  }
+
   const filteredUsers = selectedView === 'all' 
     ? users 
     : users.filter(user => 
@@ -45,14 +83,12 @@ export default function Admin() {
           : user.tipo === 'Aluno'
       );
 
-  // Clear filter function
   const clearFilter = () => {
     setSelectedView('all');
   };
 
   return (
     <Box sx={{ display: 'flex', width: '100%' }}>
-      {/* Sidebar */}
       <Drawer
         variant="permanent"
         sx={{
@@ -87,8 +123,6 @@ export default function Admin() {
           >
             <ListItemText primary="VER ALUNOS" />
           </ListItem>
-          
-          {/* Clear filter button - only show when a filter is active */}
           {selectedView !== 'all' && (
             <ListItem 
               button 
@@ -101,9 +135,7 @@ export default function Admin() {
         </List>
       </Drawer>
 
-      {/* Main content */}
       <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
         <AppBar 
           position="static" 
           color="default" 
@@ -122,7 +154,6 @@ export default function Admin() {
           </Toolbar>
         </AppBar>
 
-        {/* Table - expanded to take more space */}
         <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <TableContainer 
             component={Paper} 

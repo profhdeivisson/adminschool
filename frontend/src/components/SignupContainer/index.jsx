@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   TextField, 
   Button, 
@@ -7,12 +7,18 @@ import {
   InputLabel, 
   Select, 
   MenuItem, 
-  FormHelperText
+  FormHelperText,
+  CircularProgress
 } from '@mui/material';
 import AlertMessage from '../AlertMessage';
 import './styles.css';
+import { validateEmail, validateSignupForm } from '../../utils/validators';
+import { useAlert } from '../../context/AlertContext';
+import { useMessage } from '../../context/MessageContext';
+import { useLoader } from '../../context/LoaderContext';
 
 export default function SignupContainer({ onSignup }) {
+  const {showLoader, hideLoader} = useLoader();
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -20,18 +26,13 @@ export default function SignupContainer({ onSignup }) {
     senha: '',
     confirmarSenha: ''
   });
-  
   const [errors, setErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('error');
-
-  const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
-
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -40,37 +41,21 @@ export default function SignupContainer({ onSignup }) {
     });
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
-    }
-    
-    if (!formData.email) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Email inválido';
-    }
+  useEffect(() => {
+    showLoader();
+    const timer = setTimeout(() => {
+      hideLoader();
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+      hideLoader();
+    };
+  }, []);
 
-    if (!formData.userType) {
-      newErrors.userType = 'Selecione um tipo de usuário';
-    }
-    
-    if (!formData.senha) {
-      newErrors.senha = 'Senha é obrigatória';
-    } else if (formData.senha.length < 8) {
-      newErrors.senha = 'A senha deve ter pelo menos 8 caracteres';
-    }
-    
-    if (!formData.confirmarSenha) {
-      newErrors.confirmarSenha = 'Confirme sua senha';
-    } else if (formData.senha !== formData.confirmarSenha) {
-      newErrors.confirmarSenha = 'As senhas não correspondem';
-    }
-    
+  const validateForm = () => {
+    const { isValid, newErrors } = validateSignupForm(formData, validateEmail);
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid;
   };
 
   useEffect(() => {
@@ -83,17 +68,27 @@ export default function SignupContainer({ onSignup }) {
     setIsFormValid(isValid);
   }, [formData]);
 
+  const { showAlert } = useAlert();
+  const { showMessage } = useMessage();
   const handleSubmit = (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      setAlertMessage('Cadastro realizado com sucesso!');
-      setAlertSeverity('success');
-      setOpenAlert(true);
-      
-      if (onSignup) {
-        onSignup(formData);
-      }
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+        setAlertMessage('Cadastro realizado com sucesso!');
+        setAlertSeverity('success');
+        setOpenAlert(true);
+
+        if (onSignup) {
+          onSignup(formData);
+        }
+        setTimeout(() => {
+          showMessage('Cadastro realizado! Faça login');
+          navigate('/');
+        }, 1200);
+      }, 1500);
     } else {
       setAlertMessage('Por favor, corrija os erros no formulário.');
       setAlertSeverity('error');
@@ -121,6 +116,7 @@ export default function SignupContainer({ onSignup }) {
             error={!!errors.nome}
             helperText={errors.nome}
             required
+            disabled={loading}
           />
           
           <TextField
@@ -135,9 +131,10 @@ export default function SignupContainer({ onSignup }) {
             error={!!errors.email}
             helperText={errors.email}
             required
+            disabled={loading}
           />
           
-          <FormControl fullWidth error={!!errors.userType} required>
+          <FormControl fullWidth error={!!errors.userType} required disabled={loading}>
             <InputLabel id="userType-label">Tipo de Usuário</InputLabel>
             <Select
               labelId="userType-label"
@@ -167,6 +164,7 @@ export default function SignupContainer({ onSignup }) {
             error={!!errors.senha}
             helperText={errors.senha}
             required
+            disabled={loading}
           />
           
           <TextField
@@ -181,6 +179,7 @@ export default function SignupContainer({ onSignup }) {
             error={!!errors.confirmarSenha}
             helperText={errors.confirmarSenha}
             required
+            disabled={loading}
           />
           
           <Button 
@@ -189,16 +188,15 @@ export default function SignupContainer({ onSignup }) {
             color="primary" 
             fullWidth 
             className="signup-button"
-            disabled={!isFormValid}
+            disabled={!isFormValid || loading}
           >
-            Cadastrar
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Cadastrar"}
           </Button>
         </form>
         <p className="login-link">
           Já possui conta? <Link to="/">Faça login</Link>
         </p>
       </div>
-      
       <AlertMessage
         open={openAlert}
         message={alertMessage}
