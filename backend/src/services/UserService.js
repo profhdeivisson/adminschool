@@ -97,6 +97,11 @@ class UserService {
     if (!UserRoles.isValid(normalizedRole)) {
       throw new Error(`Role inválida: ${role}. Use: ${UserRoles.values().join(', ')}`);
     }
+
+    // Verifica se a senha tem mais de 8 caracteres
+    if (password.length <= 8) {
+      throw new Error('A senha deve ter mais de 8 caracteres');
+    }
   
     // Verifica email duplicado
     if (await this.repository.findByEmail(email)) {
@@ -117,6 +122,28 @@ class UserService {
     // Salva no banco de dados
     return await this.repository.create(user);
   }
+
+  async deleteUser(userId, requestingUser) {
+    if (requestingUser.role !== UserRoles.ADMIN) {
+      throw new Error('Apenas administradores podem excluir usuários');
+    }
+
+    const userToDelete = await this.repository.findById(userId);
+    if(!userToDelete) {
+      throw new Error('Usuário não encontrado');
+    }
+    if (userToDelete.role === UserRoles.ADMIN) {
+      throw new Error('Não é possível excluir um administrador');
+    }
+    if (userToDelete.id === requestingUser.id) {
+      throw new Error('Não é possível excluir o próprio usuário');
+    }
+    const deletedUser = await this.repository.delete(userId);
+    return {
+      message: `Usuário ${deletedUser.name} foi excluído com sucesso`
+    };
+  }
+
 }
 
 module.exports = UserService;
