@@ -1,22 +1,34 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   TextField, 
   Button,
+  CircularProgress
 } from '@mui/material';
 import AlertMessage from '../AlertMessage';
 import './styles.css';
+import { validateLoginForm } from '../../utils/validators';
+import { useAuth } from '../../context/AuthContext';
+import { useAlert } from '../../context/AlertContext';
+import { useMessage } from '../../context/MessageContext';
+import { useLoader } from '../../context/LoaderContext';
+import { postLogin } from '../../services/login';
 
 export default function LoginContainer({ onLogin }) {
   const [formData, setFormData] = useState({
-    nome: '',
-    senha: ''
+    email: '',
+    password: ''
   });
-  
   const [errors, setErrors] = useState({});
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('error');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const { alert, clearAlert } = useAlert();
+  const { message, clearMessage } = useMessage();
+  const { showLoader, hideLoader } = useLoader();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,38 +39,69 @@ export default function LoginContainer({ onLogin }) {
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
-    }
-    
-    if (!formData.senha) {
-      newErrors.senha = 'Senha é obrigatória';
-    }
-    
+    const { isValid, newErrors } = validateLoginForm(formData);
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid;
   };
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    showLoader();
+    const timer = setTimeout(() => {
+      hideLoader();
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+      hideLoader();
+    };
+  }, []);
+
+  if (alert && alert.message) {
+    setAlertMessage(alert.message);
+    setAlertSeverity(alert.severity || 'info');
+    setOpenAlert(true);
+    clearAlert();
+  }
+
+  useEffect(() => {
+    if (message) {
+      setTimeout(() => {
+        setAlertMessage(message);
+        setAlertSeverity('success');
+        setOpenAlert(true);
+        clearMessage();
+      }, 500);
+    }
+  }, [message, clearMessage]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      console.log('Login successful', formData);
-      
-      localStorage.setItem('isAuthenticated', 'true');
-      
-      if (formData.nome.toLowerCase() === 'admin') {
-        window.location.href = '/admin';
-      } else {
-        setAlertMessage('Login realizado com sucesso!');
-        setAlertSeverity('success');
+      setLoading(true);
+      try {
+        const response = await postLogin(formData);
+        console.log(response)
+        setLoading(false);
+
+        if(response.error) {
+          setAlertMessage(response.error);
+          setAlertSeverity('error');
+          setOpenAlert(true);
+          return;
+        }
+
+        if(response.data && response.data.token) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('isAuthenticated', 'true');
+        }
+
+        login(response);
+        navigate('/admin');
+      } catch (error) {
+        setLoading(false);
+        setAlertMessage(error.data.error);
+        setAlertSeverity('error');
         setOpenAlert(true);
-      }
-      
-      if (onLogin) {
-        onLogin(formData);
       }
     } else {
       setAlertMessage('Por favor, preencha todos os campos.');
@@ -77,17 +120,18 @@ export default function LoginContainer({ onLogin }) {
         <h1>LOGIN</h1>
         <form className="login-form" onSubmit={handleSubmit} noValidate>
           <TextField
-            label="Nome"
+            label="Email"
             variant="outlined"
             fullWidth
-            id="nome"
-            name="nome"
-            value={formData.nome}
+            id="email"
+            name="email"
+            value={formData.email}
             onChange={handleChange}
-            error={!!errors.nome}
-            helperText={errors.nome}
+            error={!!errors.email}
+            helperText={errors.email}
             margin="normal"
             required
+            disabled={loading}
           />
           
           <TextField
@@ -95,14 +139,15 @@ export default function LoginContainer({ onLogin }) {
             variant="outlined"
             fullWidth
             type="password"
-            id="senha"
-            name="senha"
-            value={formData.senha}
+            id="password"
+            name="password"
+            value={formData.password}
             onChange={handleChange}
-            error={!!errors.senha}
-            helperText={errors.senha}
+            error={!!errors.password}
+            helperText={errors.password}
             margin="normal"
             required
+            disabled={loading}
           />
           
           <Button 
@@ -112,8 +157,9 @@ export default function LoginContainer({ onLogin }) {
             fullWidth 
             className="login-button"
             sx={{ mt: 2 }}
+            disabled={loading}
           >
-            Entrar
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Entrar"}
           </Button>
         </form>
         <p className="register-link">
