@@ -11,7 +11,6 @@ export async function listUsers() {
     });
     return response;
   } catch (error) {
-    // Retorna um objeto de erro padronizado
     return { error: error.response?.data?.error || 'Erro ao buscar usuários', status: error.response?.status };
   }
 }
