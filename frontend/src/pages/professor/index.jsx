@@ -5,7 +5,7 @@ import { listUsers } from '../../services/listUsers';
 import Layout from '../../components/shared/Layout/Layout';
 import UserTable from '../../components/shared/UserProfile/UserTable';
 
-export default function Admin() {
+export default function Professor() {
   const { user: authUser } = useAuth();
   const [searchText, setSearchText] = useState('');
 
@@ -14,12 +14,14 @@ export default function Admin() {
     queryFn: listUsers,
     select: (data) => {
       if (data.error) throw new Error(data.error);
-      return data.data.map(user => ({
-        id: user.id,
-        nome: user.name,
-        email: user.email,
-        tipo: user.role
-      }));
+      return data.data
+        .filter(user => user.role === 'ALUNO')
+        .map(user => ({
+          id: user.id,
+          nome: user.name,
+          email: user.email,
+          tipo: user.role
+        }));
     },
     staleTime: 5 * 60 * 1000
   });
@@ -29,7 +31,7 @@ export default function Admin() {
 
   return (
     <Layout searchText={searchText} setSearchText={setSearchText}>
-      <UserTable users={users} searchText={searchText} userRole="ADMIN" />
+      <UserTable users={users} searchText={searchText} userRole="PROFESSOR" />
     </Layout>
   );
 }
