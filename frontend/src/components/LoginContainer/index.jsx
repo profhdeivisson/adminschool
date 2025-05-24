@@ -80,7 +80,6 @@ export default function LoginContainer({ onLogin }) {
       setLoading(true);
       try {
         const response = await postLogin(formData);
-        console.log(response)
         setLoading(false);
 
         if(response.error) {
@@ -93,9 +92,10 @@ export default function LoginContainer({ onLogin }) {
         if(response.data && response.data.token) {
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('userType', response.data.user.role.toLowerCase());
+          login(response.data.user);
         }
 
-        login(response);
         navigate('/admin');
       } catch (error) {
         setLoading(false);
