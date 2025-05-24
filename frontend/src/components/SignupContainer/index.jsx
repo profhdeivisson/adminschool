@@ -16,6 +16,7 @@ import { validateEmail, validateSignupForm } from '../../utils/validators';
 import { useAlert } from '../../context/AlertContext';
 import { useMessage } from '../../context/MessageContext';
 import { useLoader } from '../../context/LoaderContext';
+import { createUser } from '../../services/create';
 
 export default function SignupContainer({ onSignup }) {
   const {showLoader, hideLoader} = useLoader();
@@ -70,13 +71,20 @@ export default function SignupContainer({ onSignup }) {
 
   const { showAlert } = useAlert();
   const { showMessage } = useMessage();
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
       setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
+      try {
+        const userData = {
+          name: formData.nome,
+          email: formData.email,
+          password: formData.senha,
+          role: formData.userType.toUpperCase()
+        };
+
+        await createUser(userData);
         setAlertMessage('Cadastro realizado com sucesso!');
         setAlertSeverity('success');
         setOpenAlert(true);
@@ -84,11 +92,19 @@ export default function SignupContainer({ onSignup }) {
         if (onSignup) {
           onSignup(formData);
         }
+
         setTimeout(() => {
           showMessage('Cadastro realizado! Faça login');
           navigate('/');
         }, 1200);
-      }, 1500);
+
+      } catch (error) {
+        setAlertMessage('Erro ao realizar cadastro. Tente novamente.');
+        setAlertSeverity('error');
+        setOpenAlert(true);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setAlertMessage('Por favor, corrija os erros no formulário.');
       setAlertSeverity('error');
@@ -145,9 +161,9 @@ export default function SignupContainer({ onSignup }) {
               label="Tipo de Usuário"
             >
               <MenuItem value="">Selecione um tipo</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
-              <MenuItem value="professor">Professor</MenuItem>
-              <MenuItem value="aluno">Aluno</MenuItem>
+              <MenuItem value="ADMIN">Admin</MenuItem>
+              <MenuItem value="PROFESSOR">Professor</MenuItem>
+              <MenuItem value="ALUNO">Aluno</MenuItem>
             </Select>
             {errors.userType && <FormHelperText>{errors.userType}</FormHelperText>}
           </FormControl>
