@@ -10,6 +10,9 @@ public record UserRequest(
     @NotBlank
     @NotNull
     String name,
+    
+    @NotBlank
+    String username,
 
     @NotBlank
     @NotNull

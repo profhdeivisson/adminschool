@@ -3,12 +3,10 @@ package br.com.adminschool.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import br.com.adminschool.dto.UserResponse;
 import br.com.adminschool.model.User;
@@ -27,7 +25,7 @@ public class UserController {
     @GetMapping
     public List<UserResponse> findAll(){
         List<User> users = service.findAll();
-        return users.stream().map(user -> new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole())).collect(Collectors.toList());
+        return users.stream().map(user -> new UserResponse(user.getId(), user.getName(), user.getUsername(), user.getEmail(), user.getRole())).collect(Collectors.toList());
     }
     
 }
