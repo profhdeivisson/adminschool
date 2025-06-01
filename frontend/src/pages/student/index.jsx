@@ -21,7 +21,7 @@ export default function Student() {
         </Grid>
       </Grid>
       <Grid container spacing={3} pt={3} sx={{display: 'grid', gap: 1, gridTemplateColumns: 'repeat(1, 1fr)'}}>
-        <Grid container>
+        <Grid container mb={3}>
           <GradesTable />
         </Grid>
       </Grid>
