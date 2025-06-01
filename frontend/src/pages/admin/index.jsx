@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { listUsers } from '../../services/listUsers';
 import Layout from '../../components/shared/Layout/Layout';
 import UserTable from '../../components/shared/UserProfile/UserTable';
+import InfoCards from '../../components/shared/InfoCards';
 
 export default function Admin() {
   const { user: authUser } = useAuth();
@@ -29,6 +30,7 @@ export default function Admin() {
 
   return (
     <Layout searchText={searchText} setSearchText={setSearchText}>
+      <InfoCards users={users} />
       <UserTable users={users} searchText={searchText} userRole="ADMIN" />
     </Layout>
   );
