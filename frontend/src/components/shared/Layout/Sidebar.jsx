@@ -6,7 +6,8 @@ import {
   IconButton, 
   Tooltip,
   Menu,
-  MenuItem 
+  MenuItem, 
+  Link
 } from '@mui/material';
 import { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
@@ -15,6 +16,15 @@ export default function Sidebar() {
   const { user: authUser, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+
+  const getHomeRoute = (role) => {
+    const routes = {
+      ADMIN: '/admin',
+      PROFESSOR: '/professor',
+      ALUNO: '/student'
+    };
+    return routes[role] || '/';
+  };
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -48,7 +58,9 @@ export default function Sidebar() {
       <Box>
         <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
           <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-            ADMIN SCHOOL
+            <Link href={getHomeRoute(authUser?.role)} sx={{ textDecoration: 'none', color: 'black' }}>
+              ADMIN SCHOOL
+            </Link>
           </Typography>
         </Box>
       </Box>
@@ -99,8 +111,10 @@ export default function Sidebar() {
           transformOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
         >
-          <MenuItem onClick={handleClose}>
-            Meu Perfil
+          <MenuItem>
+            <Link href="/profile" sx={{ textDecoration: 'none', color: 'black' }}>
+              Meu Perfil
+            </Link>
           </MenuItem>
           <MenuItem onClick={handleLogout}>
             Sair
