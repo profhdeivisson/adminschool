@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  TextField, 
+import {
+  TextField,
   Button,
   CircularProgress
 } from '@mui/material';
@@ -75,21 +75,21 @@ export default function LoginContainer({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       setLoading(true);
       try {
         const response = await postLogin(formData);
         setLoading(false);
 
-        if(response.error) {
+        if (response.error) {
           setAlertMessage(response.error);
           setAlertSeverity('error');
           setOpenAlert(true);
           return;
         }
 
-        if(response.data && response.data.token) {
+        if (response.data && response.data.token) {
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('userType', response.data.user.role.toLowerCase());
@@ -133,7 +133,7 @@ export default function LoginContainer({ onLogin }) {
             required
             disabled={loading}
           />
-          
+
           <TextField
             label="Senha"
             variant="outlined"
@@ -149,12 +149,12 @@ export default function LoginContainer({ onLogin }) {
             required
             disabled={loading}
           />
-          
-          <Button 
-            type="submit" 
-            variant="contained" 
-            color="primary" 
-            fullWidth 
+
+          <Button
+            type="submit"
+            variant="contained"
+            color="secondary"
+            fullWidth
             className="login-button"
             sx={{ mt: 2 }}
             disabled={loading}
@@ -166,7 +166,7 @@ export default function LoginContainer({ onLogin }) {
           Não possui conta? <Link to="/signup">Cadastre-se</Link>
         </p>
       </div>
-      
+
       <AlertMessage
         open={openAlert}
         message={alertMessage}
