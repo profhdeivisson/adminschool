@@ -153,7 +153,7 @@ export default function LoginContainer({ onLogin }) {
           <Button
             type="submit"
             variant="contained"
-            color="secondary"
+            color="warning"
             fullWidth
             className="login-button"
             sx={{ mt: 2 }}
