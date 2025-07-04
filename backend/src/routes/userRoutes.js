@@ -15,4 +15,6 @@ router.get('/', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR]), userCont
 router.get('/:id', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR, UserRoles.ALUNO]), userController.getUserById.bind(userController));
 
 router.delete('/:id', authMiddleware([UserRoles.ADMIN]), userController.deleteUser.bind(userController));
+
+router.put('/:id', authMiddleware([UserRoles.ADMIN, UserRoles.PROFESSOR, UserRoles.ALUNO]), userController.updateUser.bind(userController))
 module.exports = router;

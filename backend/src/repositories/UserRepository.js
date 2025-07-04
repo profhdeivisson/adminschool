@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const { UserRoles } = require('../constants/enums');
+const bcrypt = require('bcrypt');
 
 class UserRepository {
   normalizeRole(role) {
@@ -51,6 +52,39 @@ class UserRepository {
     }
 
     return data || null;
+  }
+
+  async updateUser(id, updateData) {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+  
+    if (updateData.password) {
+      updateData.password_hash = await bcrypt.hash(updateData.password, 10);
+      delete updateData.password;
+    }
+  
+    const allowedFields = ['name', 'email', 'role', 'password_hash'];
+    const filteredData = {};
+    for (const key of allowedFields) {
+      if (updateData[key] !== undefined) {
+        filteredData[key] = updateData[key];
+      }
+    }
+  
+    const { data, error } = await supabase
+      .from('users')
+      .update(filteredData)
+      .eq('id', id)
+      .select();
+  
+    if (error) {
+      console.error('Erro no Supabase:', error);
+      throw new Error(`Falha ao atualizar usuário: ${error.message}`);
+    }
+  
+    return data[0];
   }
 
   async findAll() {

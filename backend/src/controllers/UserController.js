@@ -46,6 +46,25 @@ class UserController {
       }
     }
   }
+  async updateUser(req, res){
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      const requestingUser = req.user;
+  
+      const updatedUser = await this.userService.updateUser(id, updateData, requestingUser);
+  
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      if (error.message === 'Usuário não encontrado') {
+        res.status(404).json({ error: error.message });
+      } else if (error.message.includes('acesso não autorizado')) {
+        res.status(403).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: error.message });
+      }
+    }
+  }
 
   async deleteUser(req, res) {
     try {

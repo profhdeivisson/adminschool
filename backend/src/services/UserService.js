@@ -54,26 +54,39 @@ class UserService {
     }
   }
 
-  async getUserById(userId, requestingUser) {
-    const user = await this.repository.findById(userId);
-    
+  async updateUser(id, updateData, requestingUser) {
+    const user = await this.repository.findById(id);
     if (!user) {
       throw new Error('Usuário não encontrado');
     }
-
-    if (requestingUser.role === UserRoles.ADMIN) {
-      return user;
+  
+    // Exemplo de permissão (ajuste conforme sua regra)
+    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== id) {
+      throw new Error('acesso não autorizado');
     }
+  
+    // Atualize apenas os campos permitidos
+    Object.assign(user, updateData);
+  
+    const updatedUser = await this.repository.updateUser(id, user);
+    return updatedUser;
+  }
 
-    if (requestingUser.role === UserRoles.PROFESSOR && user.role === UserRoles.ALUNO) {
-      return user;
+  async updateUser(userId, updateData, requestingUser) {
+    const user = await this.repository.findById(userId);
+  
+    if (!user) {
+      throw new Error('Usuário não encontrado');
     }
-
-    if (requestingUser.id === userId) {
-      return user;
+  
+    const isAdmin = requestingUser.role === UserRoles.ADMIN;
+    const isSelf = requestingUser.id === userId;
+  
+    if (!isAdmin && !isSelf) {
+      throw new Error('acesso não autorizado');
     }
-
-    throw new Error('Acesso não autorizado');
+  
+    return await this.repository.updateUser(userId, updateData);
   }
 
   async register({ name, email, password, role}) {
