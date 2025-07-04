@@ -14,30 +14,30 @@ import org.springframework.stereotype.Service;
 public class JwtService {
     private final JwtEncoder encoder;
 
-  public JwtService(JwtEncoder encoder) {
-    this.encoder = encoder;
-  }
+    public JwtService(JwtEncoder encoder) {
+        this.encoder = encoder;
+    }
 
-  public String generateToken(Authentication authentication) {
-    Instant now = Instant.now();
-    long expiry = 3600L;
+    public String generateToken(Authentication authentication) {
+        Instant now = Instant.now();
+        long expiry = 3600L;
 
-    String scope = authentication
-        .getAuthorities().stream()
-        .map(GrantedAuthority::getAuthority)
-        .collect(Collectors
-            .joining(" "));
+        String scope = authentication
+                .getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors
+                        .joining(" "));
 
-    JwtClaimsSet claims = JwtClaimsSet.builder()
-        .issuer("spring-security-jwt")
-        .issuedAt(now)
-        .expiresAt(now.plusSeconds(expiry))
-        .subject(authentication.getName())
-        .claim("scope", scope)
-        .build();
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("spring-security-jwt")
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(expiry))
+                .subject(authentication.getName())
+                .claim("scope", scope)
+                .build();
 
-    return encoder.encode(
-        JwtEncoderParameters.from(claims))
-        .getTokenValue();
-  }
+        return encoder.encode(
+                        JwtEncoderParameters.from(claims))
+                .getTokenValue();
+    }
 }
