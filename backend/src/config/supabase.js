@@ -1,9 +1,24 @@
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const environment = require('./environment');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseUrl = environment.SUPABASE_URL || 'https://example.supabase.co';
+const supabaseAnonKey = environment.SUPABASE_ANON_KEY || 'dummy-key';
+const supabaseServiceRoleKey = environment.SUPABASE_SERVICE_ROLE_KEY || 'dummy-service-key';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Verificar se as variáveis de ambiente estão configuradas
+if (!environment.isSupabaseConfigured()) {
+  console.warn('⚠️  Variáveis de ambiente do Supabase não configuradas. Usando valores dummy.');
+}
 
-module.exports = supabase;
+// Cliente para operações públicas (com anon key)
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Cliente para operações administrativas (com service role key)
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
+
+module.exports = { supabase, supabaseAdmin };

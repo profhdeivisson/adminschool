@@ -1,31 +1,12 @@
-const supabase = require('../config/supabase');
-const { UserRoles } = require('../constants/enums');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 const bcrypt = require('bcrypt');
 
 class UserRepository {
-  normalizeRole(role) {
-    if (typeof role !== 'string' || !role.trim()) {
-      throw new Error('Role deve ser uma string não vazia');
-    }
-
-    const normalizedRole = role.trim().toUpperCase();
-    
-    if (!UserRoles.isValid(normalizedRole)) {
-      throw new Error(`Role inválida: ${role}. Roles permitidas: ${UserRoles.values().join(', ')}`);
-    }
-    
-    return normalizedRole;
-  }
 
   async create(userData) {
-    const normalizedData = { ...userData };
-    if (userData.role) {
-      normalizedData.role = this.normalizeRole(userData.role);
-    }
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
-      .insert(normalizedData)
+      .insert(userData)
       .select();
 
       if (error) {
@@ -40,7 +21,7 @@ class UserRepository {
       throw new Error('Email inválido');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('email', email.toLowerCase().trim())
@@ -73,7 +54,7 @@ class UserRepository {
       }
     }
   
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .update(filteredData)
       .eq('id', id)
@@ -87,8 +68,23 @@ class UserRepository {
     return data[0];
   }
 
+  async updateUserRole(userId, newRole) {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .update({ role: newRole })
+      .eq('id', userId)
+      .select();
+
+    if (error) {
+      console.error('Erro no Supabase:', error);
+      throw new Error(`Falha ao atualizar role do usuário: ${error.message}`);
+    }
+
+    return data[0];
+  }
+
   async findAll() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*');
 
@@ -105,7 +101,7 @@ class UserRepository {
       throw new Error('ID inválido');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', id)
@@ -130,7 +126,7 @@ class UserRepository {
       throw new Error('Usuário não encontrado');
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('users')
       .delete()
       .eq('id', id);
