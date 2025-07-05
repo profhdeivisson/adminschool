@@ -1,8 +1,8 @@
-const UserService = require('../services/UserService');
+const ServiceFactory = require('../factories/ServiceFactory');
 
 class UserController {
   constructor() {
-    this.userService = new UserService();
+    this.userService = ServiceFactory.createUserService();
   }
 
   async register(req, res) {

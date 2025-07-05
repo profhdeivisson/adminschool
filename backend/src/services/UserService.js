@@ -1,14 +1,16 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const validator = require('validator');
 const User = require('../models/User');
 const { UserRoles } = require('../constants/enums');
 const UserRepository = require('../repositories/UserRepository');
-require('dotenv').config();
+const UserValidator = require('../validators/UserValidator');
+const AuthorizationStrategy = require('./AuthorizationStrategy');
+const environment = require('../config/environment');
 
 class UserService {
-  constructor() {
-    this.repository = new UserRepository();
+  constructor(repository = null, authorizationStrategy = null) {
+    this.repository = repository || new UserRepository();
+    this.authorizationStrategy = authorizationStrategy || new AuthorizationStrategy();
   }
 
   async promoteUser(userId, newRole) {
@@ -34,8 +36,8 @@ class UserService {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      environment.JWT_SECRET,
+      { expiresIn: environment.JWT_EXPIRES_IN }
     );
 
     return { token, user };
@@ -43,15 +45,7 @@ class UserService {
 
   async getAllUsers(requestingUserRole) {
     const users = await this.repository.findAll();
-    
-    switch (requestingUserRole) {
-      case UserRoles.ADMIN:
-        return users;
-      case UserRoles.PROFESSOR:
-        return users.filter(user => user.role === UserRoles.ALUNO);
-      default:
-        throw new Error('Acesso não autorizado');
-    }
+    return this.authorizationStrategy.executeStrategy(requestingUserRole, users);
   }
 
   async getUserById(userId, requestingUser) {
@@ -61,19 +55,11 @@ class UserService {
       throw new Error('Usuário não encontrado');
     }
 
-    if (requestingUser.role === UserRoles.ADMIN) {
-      return user;
+    if (!this.authorizationStrategy.canAccessUser(requestingUser, user)) {
+      throw new Error('Acesso não autorizado');
     }
 
-    if (requestingUser.role === UserRoles.PROFESSOR && user.role === UserRoles.ALUNO) {
-      return user;
-    }
-
-    if (requestingUser.id === userId) {
-      return user;
-    }
-
-    throw new Error('Acesso não autorizado');
+    return user;
   }
 
   async updateUser(id, updateData, requestingUser) {
@@ -82,57 +68,33 @@ class UserService {
       throw new Error('Usuário não encontrado');
     }
   
-    
-    if (requestingUser.role !== 'ADMIN' && requestingUser.id !== id) {
-      throw new Error('acesso não autorizado');
+    if (!this.authorizationStrategy.canUpdateUser(requestingUser, user)) {
+      throw new Error('Acesso não autorizado');
     }
+
+    // Valida e filtra os dados de atualização
+    const validatedData = UserValidator.validateUpdateData(updateData);
   
-    // Atualize apenas os campos permitidos
-    Object.assign(user, updateData);
-  
-    const updatedUser = await this.repository.updateUser(id, user);
+    const updatedUser = await this.repository.updateUser(id, validatedData);
     return updatedUser;
   }
 
 
   async register({ name, email, password, role}) {
-    if (!name || !email || !password || typeof role === 'undefined') {
-      throw new Error('Nome, email, senha e role são obrigatórios');
-    }
-
-    if (!validator.isEmail(email)) {
-      throw new Error('Email inválido');
-    }
-
-    // Verifica se o domínio do email existe
-    const [, domain] = email.split('@');
-    if (!await validator.isFQDN(domain)) {
-      throw new Error('Domínio do email inválido ou inexistente');
-    }
-  
-    // Normaliza a role (remove espaços, converte para maiúsculas)
-    const normalizedRole = role.trim().toUpperCase();
-    
-    if (!UserRoles.isValid(normalizedRole)) {
-      throw new Error(`Role inválida: ${role}. Use: ${UserRoles.values().join(', ')}`);
-    }
-
-    // Verifica se a senha tem mais de 8 caracteres
-    if (password.length <= 8) {
-      throw new Error('A senha deve ter mais de 8 caracteres');
-    }
+    // Valida todos os dados de entrada
+    const validatedData = UserValidator.validateUserData({ name, email, password, role });
   
     // Verifica email duplicado
-    if (await this.repository.findByEmail(email)) {
+    if (await this.repository.findByEmail(validatedData.email)) {
       throw new Error('Email já cadastrado');
     }
   
     // Cria o usuário 
     const user = new User({
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      password_hash: await bcrypt.hash(password, 10),
-      role: normalizedRole // Garante formatação consistente
+      name: validatedData.name,
+      email: validatedData.email,
+      password_hash: await bcrypt.hash(validatedData.password, environment.BCRYPT_ROUNDS),
+      role: validatedData.role
     });
     
     // Valida o usuário antes de salvar
@@ -143,20 +105,15 @@ class UserService {
   }
 
   async deleteUser(userId, requestingUser) {
-    if (requestingUser.role !== UserRoles.ADMIN) {
-      throw new Error('Apenas administradores podem excluir usuários');
-    }
-
     const userToDelete = await this.repository.findById(userId);
     if(!userToDelete) {
       throw new Error('Usuário não encontrado');
     }
-    if (userToDelete.role === UserRoles.ADMIN) {
-      throw new Error('Não é possível excluir um administrador');
+
+    if (!this.authorizationStrategy.canDeleteUser(requestingUser, userToDelete)) {
+      throw new Error('Acesso não autorizado');
     }
-    if (userToDelete.id === requestingUser.id) {
-      throw new Error('Não é possível excluir o próprio usuário');
-    }
+
     const deletedUser = await this.repository.delete(userId);
     return {
       message: `Usuário ${deletedUser.name} foi excluído com sucesso`
