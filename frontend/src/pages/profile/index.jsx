@@ -8,12 +8,12 @@ import ProfileComponent from '../../components/shared/ProfileComponent';
 export default function Profile() {
     const [searchText, setSearchText] = useState('');
     const { user: authUser } = useAuth();
-    const { data: userData, isLoading, isError, error } = useQuery({
+    const { data: userData, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['user', authUser?.id],
         queryFn: () => getUser(authUser?.id),
         select: (data) => {
-        if (data.error) throw new Error(data.error);
-        return data.data;
+            if (data.error) throw new Error(data.error);
+            return data.data;
         },
         enabled: !!authUser?.id,
         staleTime: 5 * 60 * 1000
@@ -23,8 +23,11 @@ export default function Profile() {
     if (isError) return <div>Erro: {error.message}</div>;
 
     return (
-    <Layout searchText={searchText} setSearchText={setSearchText}>
-        <ProfileComponent userData={userData} />
-    </Layout>
+        <Layout searchText={searchText} setSearchText={setSearchText}>
+            <ProfileComponent
+                userData={userData}
+                onProfileUpdate={refetch}
+            />
+        </Layout>
     );
 }

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { getUser } from '../services/getUser';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
       try {
         const decodedToken = jwtDecode(token);
         const currentTime = Date.now() / 1000;
-        
+
         if (decodedToken.exp < currentTime) {
           throw new Error('Token expirado');
         }

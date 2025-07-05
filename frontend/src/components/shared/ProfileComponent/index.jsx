@@ -2,8 +2,20 @@ import { format, formatDistance } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import './styles.css';
 import { Link } from '@mui/material';
+import { useState } from 'react';
+import ModalEditProfile from '../ModalEditProfile';
+import { updateUser } from '../../../services/updateUser';
+import AlertMessage from '../../AlertMessage';
 
-export default function ProfileComponent({ userData }) {
+export default function ProfileComponent({ userData, onProfileUpdate }) {
+    const [modalOpen, setModalOpen] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [alertState, setAlertState] = useState({
+        open: false,
+        message: '',
+        severity: 'success'
+    });
+
     const formatDate = (date) => {
         if (!date) return '-';
         const parsedDate = new Date(date);
@@ -30,7 +42,7 @@ export default function ProfileComponent({ userData }) {
                     </div>
                     <h1>Meu Perfil</h1>
                 </div>
-                
+
                 <div className="profile-info">
                     <div className="info-group">
                         <label>Nome</label>
@@ -59,9 +71,45 @@ export default function ProfileComponent({ userData }) {
                 </div>
 
                 <div className="profile-actions">
-                    <Link to="#" className="edit-button">Editar Perfil</Link>
+                    <Link onClick={() => setModalOpen(true)} className="edit-button">Editar Perfil</Link>
                 </div>
             </div>
+
+            <ModalEditProfile
+                userData={userData}
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                onSave={async (updatedData) => {
+                    setIsUpdating(true);
+
+                    try {
+                        await updateUser(updatedData, userData.id);
+                        await onProfileUpdate();
+
+                        setAlertState({
+                            open: true,
+                            message: 'Perfil atualizado com sucesso!',
+                            severity: 'success'
+                        });
+                    } catch (error) {
+                        setAlertState({
+                            open: true,
+                            message: 'Erro ao atualizar perfil: ' + (error.message || 'Tente novamente mais tarde'),
+                            severity: 'error'
+                        });
+                    } finally {
+                        setIsUpdating(false);
+                    }
+                }}
+                isSaving={isUpdating}
+            />
+
+            <AlertMessage
+                open={alertState.open}
+                message={alertState.message}
+                severity={alertState.severity}
+                onClose={() => setAlertState(prev => ({ ...prev, open: false }))}
+            />
         </div>
     );
 }
