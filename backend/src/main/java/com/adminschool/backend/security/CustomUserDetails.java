@@ -1,7 +1,6 @@
 package com.adminschool.backend.security;
 
 import com.adminschool.backend.entity.User;
-import com.adminschool.backend.entity.enuns.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

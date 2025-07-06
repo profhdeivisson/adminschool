@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -33,19 +34,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = jwtTokenProvider.getTokenFromRequest(request);
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
-            String username = jwtTokenProvider.getUsernameFromToken(token);
-
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities());
-
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+            String userIdStr = jwtTokenProvider.getUsernameFromToken(token);
+            if (userIdStr != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                try {
+                    UUID userId = UUID.fromString(userIdStr);
+                    UserDetails userDetails = ((com.adminschool.backend.services.UserService) userDetailsService).loadUserById(userId);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } catch (IllegalArgumentException e) {
+                    // UUID inválido, não autentica
+                }
             }
         }
 
